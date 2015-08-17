@@ -1,0 +1,30 @@
+post_install() {
+  local pat1='extension=mysql.so' pat2='open_basedir' \
+    sub='/usr/share/webapps/' ini=etc/php/php.ini
+
+  if grep -q "^;$pat1" $ini; then
+    echo -n "enabling mysql extension in /$ini... "
+    sed -ie "s/^;$pat1/$pat1/" $ini
+    echo 'done.'
+  fi
+
+  if ! grep -q "^$pat2.*$sub" $ini; then
+    echo -n "adding $sub to open_basedir in /$ini... "
+    sed -ie "/^$pat2/ s|\$|:$sub|" $ini
+    echo 'done.'
+  fi
+
+  cat << EOF
+Please copy the Apache configuration file:
+# cp /etc/webapps/sqlbuddy/apache.example.conf /etc/httpd/conf/extra/sqlbuddy.conf
+and add:
+Include "conf/extra/sqlbuddy.conf"
+to /etc/httpd/conf/httpd.conf, then reload the server:
+# systemctl reload httpd'
+Login to http://localhost/sqlbuddy
+EOF
+}
+
+post_upgrade() {
+  post_install $1
+}
